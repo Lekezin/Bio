@@ -25,7 +25,7 @@ import "./styles.css";
 const FRAME_COUNT = 160;
 const frameUrls = Array.from(
   { length: FRAME_COUNT },
-  (_, index) => `assets/frames/img (${index + 1}).jpg`,
+  (_, index) => `/assets/frames/img (${index + 1}).jpg`,
 );
 
 const colorStates = [
@@ -105,17 +105,17 @@ const showcaseItems = [
   {
     title: "Sensor azul",
     text: "Estado visual de cicatrização equilibrada, com leitura clara e discreta.",
-    image: "assets/generated/product-blue.png",
+    image: "/assets/generated/product-blue.png",
   },
   {
     title: "Sensor roxo",
     text: "Atenção preventiva para mudanças no pH antes que o desconforto aumente.",
-    image: "assets/generated/hero-bandage.png",
+    image: "/assets/generated/hero-bandage.png",
   },
   {
     title: "Kits BioCheck",
     text: "Formatos pensados para casa, rotina esportiva e acompanhamento profissional.",
-    image: "assets/generated/product-kit.png",
+    image: "/assets/generated/product-kit.png",
   },
 ];
 
@@ -144,57 +144,40 @@ const pricing = [
 function IntroSequence() {
   const [frame, setFrame] = React.useState(0);
   const [done, setDone] = React.useState(false);
-  const [loaded, setLoaded] = React.useState(0);
 
   React.useEffect(() => {
-    let active = true;
-    let timer;
-
-    const preload = frameUrls.map(
-      (src) =>
-        new Promise((resolve) => {
-          const image = new Image();
-          image.onload = () => {
-            if (active) setLoaded((value) => value + 1);
-            resolve();
-          };
-          image.onerror = resolve;
-          image.src = src;
-        }),
-    );
-
-    Promise.all(preload).then(() => {
-      if (!active) return;
-      timer = window.setInterval(() => {
-        setFrame((current) => {
-          if (current >= FRAME_COUNT - 1) {
-            window.clearInterval(timer);
-            window.setTimeout(() => {
-              if (active) setDone(true);
-            }, 650);
-            return current;
-          }
-          return current + 1;
-        });
-      }, 28);
+    frameUrls.slice(0, 28).forEach((src) => {
+      const image = new Image();
+      image.src = src;
     });
 
-    return () => {
-      active = false;
-      window.clearInterval(timer);
-    };
-  }, []);
+    const timer = window.setInterval(() => {
+      setFrame((current) => {
+        if (current >= FRAME_COUNT - 1) {
+          window.clearInterval(timer);
+          window.setTimeout(() => setDone(true), 650);
+          return current;
+        }
+        const next = current + 1;
+        if (next + 12 < FRAME_COUNT) {
+          const image = new Image();
+          image.src = frameUrls[next + 12];
+        }
+        return next;
+      });
+    }, 30);
 
-  const progress = Math.max(loaded / FRAME_COUNT, (frame + 1) / FRAME_COUNT);
+    return () => window.clearInterval(timer);
+  }, []);
 
   return (
     <div className={`intro ${done ? "intro--done" : ""}`} aria-hidden={done}>
       <img className="intro__frame" src={frameUrls[frame]} alt="" />
       <div className="intro__grain" />
       <div className="intro__hud">
-        <img src="assets/logos/logo-icon-cropped.png" alt="" />
+        <img src="/assets/logos/logo-icon-cropped.png" alt="" />
         <div className="intro__bar" aria-label="Carregando experiência BioCheck">
-          <span style={{ transform: `scaleX(${progress})` }} />
+          <span style={{ transform: `scaleX(${(frame + 1) / FRAME_COUNT})` }} />
         </div>
       </div>
     </div>
@@ -205,7 +188,7 @@ function Nav() {
   return (
     <header className="nav">
       <a className="nav__brand" href="#top" aria-label="Início BioCheck">
-        <img src="assets/logos/logo-icon-cropped.png" alt="" />
+        <img src="/assets/logos/logo-icon-cropped.png" alt="" />
       </a>
       <nav aria-label="Navegação principal">
         <a href="#how">Como Funciona</a>
@@ -214,7 +197,7 @@ function Nav() {
         <a href="#pricing">Planos</a>
       </nav>
       <a className="button button--small button--primary" href="#showcase">
-        Explorar
+        Explorar BioCheck
         <ArrowRight size={16} />
       </a>
     </header>
@@ -238,7 +221,7 @@ function Hero() {
   return (
     <section className="hero" id="top">
       <div className="hero__copy reveal">
-        <img className="hero__logo" src="assets/logos/logo-slogan-cropped.png" alt="BioCheck. Sua saúde visível em cada detalhe." />
+        <img className="hero__logo" src="/assets/logos/logo-slogan-cropped.png" alt="BioCheck. Sua saúde visível em cada detalhe." />
         <h1>A Cor Que Protege Você</h1>
         <p>
           Monitoramento de infecção em tempo real com sensores colorimétricos. Saiba quando a cicatrização está
@@ -258,7 +241,7 @@ function Hero() {
 
       <div className="hero__visual reveal reveal--delay">
         <div className="hero__halo" />
-        <img className="hero__bandage" src="assets/generated/hero-bandage.png" alt="Curativo inteligente transparente com sensor BioCheck roxo" />
+        <img className="hero__bandage" src="/assets/generated/hero-bandage.png" alt="Curativo inteligente transparente com sensor BioCheck roxo" />
         <div className="hero__glass hero__glass--one">
           <Zap size={18} />
           <span>Monitoramento em tempo real</span>
@@ -354,7 +337,7 @@ function ProductShowcase() {
       </div>
 
       <div className="showcase__hero reveal">
-        <img src="assets/generated/product-kit.png" alt="Kit BioCheck com curativos inteligentes em diferentes estados de cor" />
+        <img src="/assets/generated/product-kit.png" alt="Kit BioCheck com curativos inteligentes em diferentes estados de cor" />
         <div className="showcase__panel">
           <Eye size={28} />
           <h3>Leitura por cor, sem interromper o cuidado.</h3>
@@ -446,7 +429,7 @@ function About() {
         </p>
       </div>
       <div className="about__visual reveal reveal--delay">
-        <img src="assets/generated/product-blue.png" alt="Sensor BioCheck azul em curativo transparente" />
+        <img src="/assets/generated/product-blue.png" alt="Sensor BioCheck azul em curativo transparente" />
         <div className="about__metrics">
           <span>
             <Check size={16} />
@@ -467,6 +450,8 @@ function About() {
 }
 
 function Partnership() {
+  const [logoAvailable, setLogoAvailable] = React.useState(true);
+
   return (
     <section className="section partnership">
       <div className="partnership__card reveal">
@@ -479,7 +464,15 @@ function Partnership() {
           </p>
         </div>
         <div className="ipear-mark" aria-label="Logo IPear">
-          <strong>IPear</strong>
+          {logoAvailable ? (
+            <img
+              src="/assets/logos/ipear-logo.png"
+              alt="IPear"
+              onError={() => setLogoAvailable(false)}
+            />
+          ) : (
+            <strong>IPear</strong>
+          )}
         </div>
       </div>
     </section>
@@ -528,7 +521,7 @@ function MissionBand() {
     <section className="section mission-section">
       <div className="mission reveal">
         <div className="mission__image">
-          <img src="assets/generated/hero-bandage.png" alt="Detalhe do curativo inteligente BioCheck" />
+          <img src="/assets/generated/hero-bandage.png" alt="Detalhe do curativo inteligente BioCheck" />
         </div>
         <div className="mission__copy">
           <h2>Sua saúde visível em cada detalhe.</h2>
@@ -554,7 +547,7 @@ function ContactFooter() {
   return (
     <footer className="footer" id="contact">
       <div>
-        <img src="assets/logos/logo-slogan-cropped.png" alt="BioCheck. Sua saúde visível em cada detalhe." />
+        <img src="/assets/logos/logo-slogan-cropped.png" alt="BioCheck. Sua saúde visível em cada detalhe." />
         <p>Tecnologia inteligente e acessível para tornar o cuidado com feridas mais claro, confortável e seguro.</p>
       </div>
       <form className="footer__form" onSubmit={(event) => event.preventDefault()}>
