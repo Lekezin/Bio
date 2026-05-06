@@ -144,31 +144,48 @@ const pricing = [
 function IntroSequence() {
   const [frame, setFrame] = React.useState(0);
   const [done, setDone] = React.useState(false);
+  const [loaded, setLoaded] = React.useState(0);
 
   React.useEffect(() => {
-    frameUrls.slice(0, 28).forEach((src) => {
-      const image = new Image();
-      image.src = src;
+    let active = true;
+    let timer;
+
+    const preload = frameUrls.map(
+      (src) =>
+        new Promise((resolve) => {
+          const image = new Image();
+          image.onload = () => {
+            if (active) setLoaded((value) => value + 1);
+            resolve();
+          };
+          image.onerror = resolve;
+          image.src = src;
+        }),
+    );
+
+    Promise.all(preload).then(() => {
+      if (!active) return;
+      timer = window.setInterval(() => {
+        setFrame((current) => {
+          if (current >= FRAME_COUNT - 1) {
+            window.clearInterval(timer);
+            window.setTimeout(() => {
+              if (active) setDone(true);
+            }, 650);
+            return current;
+          }
+          return current + 1;
+        });
+      }, 28);
     });
 
-    const timer = window.setInterval(() => {
-      setFrame((current) => {
-        if (current >= FRAME_COUNT - 1) {
-          window.clearInterval(timer);
-          window.setTimeout(() => setDone(true), 650);
-          return current;
-        }
-        const next = current + 1;
-        if (next + 12 < FRAME_COUNT) {
-          const image = new Image();
-          image.src = frameUrls[next + 12];
-        }
-        return next;
-      });
-    }, 30);
-
-    return () => window.clearInterval(timer);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
   }, []);
+
+  const progress = Math.max(loaded / FRAME_COUNT, (frame + 1) / FRAME_COUNT);
 
   return (
     <div className={`intro ${done ? "intro--done" : ""}`} aria-hidden={done}>
@@ -177,7 +194,7 @@ function IntroSequence() {
       <div className="intro__hud">
         <img src="/assets/logos/logo-icon-cropped.png" alt="" />
         <div className="intro__bar" aria-label="Carregando experiência BioCheck">
-          <span style={{ transform: `scaleX(${(frame + 1) / FRAME_COUNT})` }} />
+          <span style={{ transform: `scaleX(${progress})` }} />
         </div>
       </div>
     </div>
@@ -197,7 +214,7 @@ function Nav() {
         <a href="#pricing">Planos</a>
       </nav>
       <a className="button button--small button--primary" href="#showcase">
-        Explorar BioCheck
+        Explorar
         <ArrowRight size={16} />
       </a>
     </header>
@@ -450,8 +467,6 @@ function About() {
 }
 
 function Partnership() {
-  const [logoAvailable, setLogoAvailable] = React.useState(true);
-
   return (
     <section className="section partnership">
       <div className="partnership__card reveal">
@@ -464,15 +479,7 @@ function Partnership() {
           </p>
         </div>
         <div className="ipear-mark" aria-label="Logo IPear">
-          {logoAvailable ? (
-            <img
-              src="/assets/logos/ipear-logo.png"
-              alt="IPear"
-              onError={() => setLogoAvailable(false)}
-            />
-          ) : (
-            <strong>IPear</strong>
-          )}
+          <strong>IPear</strong>
         </div>
       </div>
     </section>
