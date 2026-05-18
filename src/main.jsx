@@ -7,26 +7,24 @@ import {
   Bike,
   Check,
   ChevronDown,
-  CircleDollarSign,
   Cross,
   Eye,
   HeartPulse,
   Hospital,
   Layers3,
+  Menu,
   Microscope,
+  Send,
   ShieldCheck,
   Sparkles,
   Syringe,
   UserRoundCheck,
+  X,
   Zap,
 } from "lucide-react";
 import "./styles.css";
 
-const FRAME_COUNT = 160;
-const frameUrls = Array.from(
-  { length: FRAME_COUNT },
-  (_, index) => `/assets/frames/img (${index + 1}).jpg`,
-);
+/* ───── data ───── */
 
 const colorStates = [
   {
@@ -57,19 +55,16 @@ const audiences = [
     title: "Pais e Crianças",
     body: "Mais tranquilidade em cortes, arranhões e pequenos cuidados do dia a dia, sem remover o curativo a cada dúvida.",
     Icon: Baby,
-    tone: "blue",
   },
   {
     title: "Atletas",
     body: "Monitoramento inteligente para abrasões, bolhas e lesões leves, com praticidade durante a rotina de recuperação.",
     Icon: Bike,
-    tone: "purple",
   },
   {
     title: "Idosos e Diabéticos",
     body: "Acompanhamento visual para peles sensíveis e feridas que exigem observação cuidadosa e intervenção precoce.",
     Icon: HeartPulse,
-    tone: "red",
   },
 ];
 
@@ -85,7 +80,7 @@ const reasons = [
     Icon: Microscope,
   },
   {
-    title: "Uso mais consciente de antibióticos",
+    title: "Uso consciente de antibióticos",
     body: "Informação antecipada apoia decisões clínicas mais precisas e evita escaladas tardias.",
     Icon: Syringe,
   },
@@ -95,7 +90,7 @@ const reasons = [
     Icon: Sparkles,
   },
   {
-    title: "Hidrogel acessível e inteligente",
+    title: "Hidrogel acessível",
     body: "Uma matriz biocompatível pensada para unir tecnologia avançada e aplicação cotidiana.",
     Icon: Layers3,
   },
@@ -108,7 +103,7 @@ const showcaseItems = [
     image: "/assets/generated/product-blue.png",
   },
   {
-    title: "Sensor roxo",
+    title: "Sensor em alerta",
     text: "Atenção preventiva para mudanças no pH antes que o desconforto aumente.",
     image: "/assets/generated/hero-bandage.png",
   },
@@ -119,7 +114,7 @@ const showcaseItems = [
   },
 ];
 
-const pricing = [
+const plans = [
   {
     name: "Unidade Individual",
     description: "Para acompanhar um cuidado pontual com tecnologia simples e intuitiva.",
@@ -130,173 +125,204 @@ const pricing = [
     name: "Kit Família",
     description: "Uma solução prática para pequenos cuidados recorrentes em casa.",
     details: ["Curativos em múltiplos tamanhos", "Indicação visual por cor", "Uso confortável no dia a dia"],
-    cta: "Explorar BioCheck",
+    cta: "Conhecer Kit",
     featured: true,
   },
   {
-    name: "Kit Profissional/Médico",
+    name: "Kit Profissional",
     description: "Para equipes que buscam monitoramento visual em fluxos de cuidado.",
-    details: ["Apresentação para rotina clínica", "Apoio ao acompanhamento preventivo", "Tecnologia de hidrogel de baixo custo"],
+    details: ["Apresentação para rotina clínica", "Apoio ao acompanhamento preventivo", "Tecnologia de hidrogel acessível"],
     cta: "Conhecer Tecnologia",
   },
 ];
 
-function IntroSequence() {
-  const [frame, setFrame] = React.useState(0);
-  const [done, setDone] = React.useState(false);
+/* ───── scroll reveal hook ───── */
+
+function useReveal(threshold = 0.15) {
+  const ref = React.useRef(null);
+  const [visible, setVisible] = React.useState(false);
 
   React.useEffect(() => {
-    frameUrls.slice(0, 28).forEach((src) => {
-      const image = new Image();
-      image.src = src;
-    });
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setVisible(true); observer.unobserve(el); } },
+      { threshold },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [threshold]);
 
-    const timer = window.setInterval(() => {
-      setFrame((current) => {
-        if (current >= FRAME_COUNT - 1) {
-          window.clearInterval(timer);
-          window.setTimeout(() => setDone(true), 650);
-          return current;
-        }
-        const next = current + 1;
-        if (next + 12 < FRAME_COUNT) {
-          const image = new Image();
-          image.src = frameUrls[next + 12];
-        }
-        return next;
-      });
-    }, 30);
+  return [ref, visible];
+}
 
-    return () => window.clearInterval(timer);
-  }, []);
-
+function Reveal({ children, className = "", delay = 0, tag: Tag = "div" }) {
+  const [ref, visible] = useReveal();
   return (
-    <div className={`intro ${done ? "intro--done" : ""}`} aria-hidden={done}>
-      <img className="intro__frame" src={frameUrls[frame]} alt="" />
-      <div className="intro__grain" />
-      <div className="intro__hud">
-        <img src="/assets/logos/logo-icon-cropped.png" alt="" />
-        <div className="intro__bar" aria-label="Carregando experiência BioCheck">
-          <span style={{ transform: `scaleX(${(frame + 1) / FRAME_COUNT})` }} />
-        </div>
-      </div>
-    </div>
+    <Tag
+      ref={ref}
+      className={`reveal ${visible ? "reveal--visible" : ""} ${className}`}
+      style={{ transitionDelay: `${delay}ms` }}
+    >
+      {children}
+    </Tag>
   );
 }
 
+/* ───── nav ───── */
+
 function Nav() {
+  const [open, setOpen] = React.useState(false);
+  const [scrolled, setScrolled] = React.useState(false);
+
+  React.useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 40);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   return (
-    <header className="nav">
-      <a className="nav__brand" href="#top" aria-label="Início BioCheck">
-        <img src="/assets/logos/logo-icon-cropped.png" alt="" />
+    <header className={`nav ${scrolled ? "nav--scrolled" : ""}`}>
+      <a className="nav__brand" href="#topo" aria-label="Início">
+        <img src="/assets/logos/logo-icon-cropped.png" alt="BioCheck" />
       </a>
-      <nav aria-label="Navegação principal">
-        <a href="#how">Como Funciona</a>
-        <a href="#showcase">Produto</a>
-        <a href="#about">Quem Somos</a>
-        <a href="#pricing">Planos</a>
+
+      <nav className={`nav__links ${open ? "nav__links--open" : ""}`} aria-label="Menu principal">
+        <a href="#como-funciona" onClick={() => setOpen(false)}>Como Funciona</a>
+        <a href="#produto" onClick={() => setOpen(false)}>Produto</a>
+        <a href="#quem-somos" onClick={() => setOpen(false)}>Quem Somos</a>
+        <a href="#planos" onClick={() => setOpen(false)}>Planos</a>
+        <a href="#contato" className="nav__cta" onClick={() => setOpen(false)}>
+          Fale Conosco
+          <ArrowRight size={15} />
+        </a>
       </nav>
-      <a className="button button--small button--primary" href="#showcase">
-        Explorar BioCheck
-        <ArrowRight size={16} />
-      </a>
+
+      <button
+        className="nav__toggle"
+        onClick={() => setOpen(!open)}
+        aria-label={open ? "Fechar menu" : "Abrir menu"}
+        aria-expanded={open}
+      >
+        {open ? <X size={22} /> : <Menu size={22} />}
+      </button>
     </header>
   );
 }
 
-function SensorOrb({ color = "#8a48ff", label = "Sensor BioCheck" }) {
-  return (
-    <div className="sensor-orb" style={{ "--sensor": color }} aria-label={label}>
-      <div className="sensor-orb__ring" />
-      <div className="sensor-orb__dots">
-        {Array.from({ length: 25 }, (_, index) => (
-          <span key={index} />
-        ))}
-      </div>
-    </div>
-  );
-}
+/* ───── hero ───── */
 
 function Hero() {
   return (
-    <section className="hero" id="top">
-      <div className="hero__copy reveal">
-        <img className="hero__logo" src="/assets/logos/logo-slogan-cropped.png" alt="BioCheck. Sua saúde visível em cada detalhe." />
-        <h1>A Cor Que Protege Você</h1>
-        <p>
-          Monitoramento de infecção em tempo real com sensores colorimétricos. Saiba quando a cicatrização está
-          evoluindo sem a dor de remover o curativo.
-        </p>
-        <div className="hero__actions">
-          <a className="button button--primary" href="#how">
+    <section className="hero" id="topo">
+      <div className="hero__content">
+        <Reveal className="hero__badge">
+          <Zap size={14} />
+          <span>Tecnologia Colorimétrica</span>
+        </Reveal>
+        <Reveal delay={80}>
+          <h1>
+            A Cor Que<br />
+            <span className="hero__accent">Protege Você.</span>
+          </h1>
+        </Reveal>
+        <Reveal delay={160}>
+          <p className="hero__subtitle">
+            Monitoramento de infecção em tempo real com sensores colorimétricos integrados ao curativo.
+            Saiba quando a cicatrização está evoluindo — sem a dor de remover.
+          </p>
+        </Reveal>
+        <Reveal className="hero__actions" delay={240}>
+          <a className="btn btn--primary" href="#como-funciona">
             Conhecer Tecnologia
-            <ArrowRight size={18} />
+            <ArrowRight size={17} />
           </a>
-          <a className="button button--ghost" href="#showcase">
-            Ver Detalhes
-            <ChevronDown size={18} />
+          <a className="btn btn--outline" href="#produto">
+            Ver Produto
+            <ChevronDown size={17} />
           </a>
-        </div>
+        </Reveal>
       </div>
 
-      <div className="hero__visual reveal reveal--delay">
-        <div className="hero__halo" />
-        <img className="hero__bandage" src="/assets/generated/hero-bandage.png" alt="Curativo inteligente transparente com sensor BioCheck roxo" />
-        <div className="hero__glass hero__glass--one">
-          <Zap size={18} />
+      <Reveal className="hero__visual" delay={120}>
+        <div className="hero__glow" />
+        <img
+          className="hero__img"
+          src="/assets/generated/hero-bandage.png"
+          alt="Curativo inteligente BioCheck com sensor colorimétrico"
+        />
+        <div className="hero__float hero__float--1">
+          <Zap size={16} />
           <span>Monitoramento em tempo real</span>
         </div>
-        <div className="hero__glass hero__glass--two">
-          <UserRoundCheck size={18} />
-          <span>Mais conforto ao cicatrizar</span>
+        <div className="hero__float hero__float--2">
+          <UserRoundCheck size={16} />
+          <span>Conforto na cicatrização</span>
         </div>
-      </div>
-      <a className="hero__scroll" href="#how" aria-label="Ir para Como Funciona">
-        <span>Como Funciona</span>
-        <ChevronDown size={18} />
+      </Reveal>
+
+      <a className="hero__scroll" href="#como-funciona" aria-label="Ir para Como Funciona">
+        <span>Saiba mais</span>
+        <ChevronDown size={16} />
       </a>
     </section>
   );
 }
 
+/* ───── sensor orb ───── */
+
+function SensorOrb({ color = "#1aa7ff", label = "Sensor BioCheck" }) {
+  return (
+    <div className="sensor-orb" style={{ "--sensor": color }} aria-label={label}>
+      <div className="sensor-orb__ring" />
+      <div className="sensor-orb__core" />
+      <div className="sensor-orb__dots">
+        {Array.from({ length: 25 }, (_, i) => <span key={i} />)}
+      </div>
+    </div>
+  );
+}
+
+/* ───── how it works ───── */
+
 function HowItWorks() {
-  const [active, setActive] = React.useState(1);
+  const [active, setActive] = React.useState(0);
   const selected = colorStates[active];
 
   return (
-    <section className="section how" id="how">
-      <div className="section__heading reveal">
-        <span>Como Funciona</span>
-        <h2>Cores inteligentes. Cicatrização mais clara.</h2>
+    <section className="section" id="como-funciona">
+      <Reveal className="section__head">
+        <span className="section__tag">Como Funciona</span>
+        <h2>Cores inteligentes.<br />Cicatrização mais clara.</h2>
         <p>
-          Os sensores BioCheck respondem a alterações de pH no ambiente da ferida, oferecendo uma indicação visual
-          imediata sobre o estado da cicatrização.
+          Os sensores BioCheck respondem a alterações de pH no ambiente da ferida,
+          oferecendo uma indicação visual imediata sobre o estado da cicatrização.
         </p>
-      </div>
+      </Reveal>
 
-      <div className="scale reveal">
-        <div className="scale__track" aria-label="Escala colorimétrica BioCheck">
-          {colorStates.map((state, index) => (
+      <Reveal className="scale">
+        <div className="scale__track">
+          {colorStates.map((s, i) => (
             <button
-              className={`scale__point ${active === index ? "scale__point--active" : ""}`}
-              key={state.name}
+              key={s.name}
               type="button"
-              style={{ "--state": state.color }}
-              onClick={() => setActive(index)}
-              aria-pressed={active === index}
-              aria-label={`Selecionar estado ${state.name}`}
+              className={`scale__dot ${active === i ? "scale__dot--active" : ""}`}
+              style={{ "--c": s.color }}
+              onClick={() => setActive(i)}
+              aria-pressed={active === i}
+              aria-label={`Selecionar estado ${s.name}`}
             >
-              <span>{state.name}</span>
+              <span>{s.name}</span>
             </button>
           ))}
         </div>
 
-        <div className="scale__stage" style={{ "--active": selected.color }}>
-          <div>
-            <SensorOrb color={selected.color} label={`Sensor no estado ${selected.name}`} />
+        <div className="scale__display" style={{ "--active": selected.color }}>
+          <div className="scale__orb-wrap">
+            <SensorOrb color={selected.color} label={`Sensor ${selected.name}`} />
           </div>
-          <article>
-            <selected.Icon size={32} />
+          <article className="scale__info">
+            <selected.Icon size={28} />
             <h3>{selected.name}</h3>
             <strong>{selected.label}</strong>
             <p>{selected.note}</p>
@@ -304,286 +330,335 @@ function HowItWorks() {
         </div>
 
         <div className="scale__cards">
-          {colorStates.map((state, index) => (
+          {colorStates.map((s, i) => (
             <button
-              key={state.name}
+              key={s.name}
               type="button"
-              className={`state-card ${active === index ? "state-card--active" : ""}`}
-              onClick={() => setActive(index)}
-              style={{ "--state": state.color }}
-              aria-label={`Ver detalhes de ${state.name}`}
+              className={`scard ${active === i ? "scard--active" : ""}`}
+              style={{ "--c": s.color }}
+              onClick={() => setActive(i)}
+              aria-label={`Ver detalhes: ${s.name}`}
             >
-              <state.Icon size={24} />
-              <span>{state.name}</span>
-              <small>{state.label}</small>
+              <s.Icon size={22} />
+              <span>{s.name}</span>
+              <small>{s.label}</small>
             </button>
           ))}
         </div>
-      </div>
+      </Reveal>
     </section>
   );
 }
 
+/* ───── product showcase ───── */
+
 function ProductShowcase() {
   return (
-    <section className="section showcase" id="showcase">
-      <div className="section__heading reveal">
-        <span>Vitrine do Produto</span>
-        <h2>Uma experiência visual para o cuidado inteligente.</h2>
+    <section className="section" id="produto">
+      <Reveal className="section__head">
+        <span className="section__tag">Vitrine do Produto</span>
+        <h2>Cuidado inteligente, visualmente claro.</h2>
         <p>
-          Renders de produto e detalhes de sensor mostram como a tecnologia BioCheck combina transparência,
-          suavidade e leitura imediata.
+          Veja como a tecnologia BioCheck combina transparência, suavidade e leitura imediata
+          no cuidado com feridas.
         </p>
-      </div>
+      </Reveal>
 
-      <div className="showcase__hero reveal">
-        <img src="/assets/generated/product-kit.png" alt="Kit BioCheck com curativos inteligentes em diferentes estados de cor" />
-        <div className="showcase__panel">
-          <Eye size={28} />
+      <Reveal className="showcase__feature">
+        <img src="/assets/generated/product-kit.png" alt="Kit BioCheck com curativos inteligentes" />
+        <div className="showcase__overlay">
+          <Eye size={26} />
           <h3>Leitura por cor, sem interromper o cuidado.</h3>
           <p>
-            A película transparente e o sensor circular deixam a resposta colorimétrica visível com estética limpa,
-            discreta e futurista.
+            A película transparente e o sensor circular deixam a resposta colorimétrica visível
+            com estética limpa, discreta e futurista.
           </p>
-          <a className="button button--ghost" href="#pricing">
-            Ver Detalhes
-            <ArrowRight size={16} />
+          <a className="btn btn--outline btn--sm" href="#planos">
+            Ver Detalhes <ArrowRight size={14} />
           </a>
         </div>
-      </div>
+      </Reveal>
 
-      <div className="gallery-grid">
-        {showcaseItems.map((item) => (
-          <article className="gallery-card reveal" key={item.title}>
-            <img src={item.image} alt={item.title} />
+      <div className="showcase__grid">
+        {showcaseItems.map((item, i) => (
+          <Reveal className="showcase__card" key={item.title} delay={i * 100}>
+            <img src={item.image} alt={item.title} loading="lazy" />
             <div>
               <h3>{item.title}</h3>
               <p>{item.text}</p>
             </div>
-          </article>
+          </Reveal>
         ))}
       </div>
     </section>
   );
 }
+
+/* ───── who it's for ───── */
 
 function WhoItsFor() {
   return (
-    <section className="section who" id="who">
-      <div className="section__heading reveal">
-        <span>Para Quem É</span>
+    <section className="section section--narrow" id="para-quem">
+      <Reveal className="section__head">
+        <span className="section__tag">Para Quem É</span>
         <h2>Projetado para diferentes jornadas de cicatrização.</h2>
-      </div>
+      </Reveal>
 
-      <div className="audience-grid">
-        {audiences.map((item) => (
-          <article className={`audience-card audience-card--${item.tone} reveal`} key={item.title}>
-            <div className="audience-card__media">
-              <item.Icon size={42} />
+      <div className="audience">
+        {audiences.map((a, i) => (
+          <Reveal className="audience__card" key={a.title} delay={i * 120} tag="article">
+            <div className="audience__icon">
+              <a.Icon size={36} />
             </div>
-            <h3>{item.title}</h3>
-            <p>{item.body}</p>
-          </article>
+            <h3>{a.title}</h3>
+            <p>{a.body}</p>
+          </Reveal>
         ))}
       </div>
     </section>
   );
 }
+
+/* ───── why biocheck ───── */
 
 function WhyBioCheck() {
   return (
-    <section className="section why" id="why">
-      <div className="section__heading reveal">
-        <span>Por Que BioCheck</span>
-        <h2>Mais segurança, conforto e precisão no acompanhamento.</h2>
-      </div>
+    <section className="section" id="por-que">
+      <Reveal className="section__head">
+        <span className="section__tag">Por Que BioCheck</span>
+        <h2>Mais segurança, conforto e precisão.</h2>
+      </Reveal>
 
-      <div className="reasons-grid">
-        {reasons.map((item) => (
-          <article className="reason-card reveal" key={item.title}>
-            <item.Icon size={30} />
-            <h3>{item.title}</h3>
-            <p>{item.body}</p>
-          </article>
+      <div className="reasons">
+        {reasons.map((r, i) => (
+          <Reveal className="reasons__card" key={r.title} delay={i * 80} tag="article">
+            <r.Icon size={26} />
+            <h3>{r.title}</h3>
+            <p>{r.body}</p>
+          </Reveal>
         ))}
       </div>
     </section>
   );
 }
 
+/* ───── about ───── */
+
 function About() {
   return (
-    <section className="section about" id="about">
-      <div className="about__copy reveal">
-        <span>Quem Somos</span>
+    <section className="section about" id="quem-somos">
+      <Reveal className="about__text">
+        <span className="section__tag">Quem Somos</span>
         <h2>Tecnologia futurista com vocação acessível.</h2>
         <p>
-          A BioCheck Technologies desenvolve curativos inteligentes equipados com sensores colorimétricos integrados a
-          uma matriz de hidrogel, capazes de monitorar a cicatrização em tempo real e detectar sinais de infecção de
-          forma precoce.
+          A BioCheck Technologies desenvolve curativos inteligentes equipados com sensores colorimétricos
+          integrados a uma matriz de hidrogel, capazes de monitorar a cicatrização em tempo real e detectar
+          sinais de infecção de forma precoce.
         </p>
         <p>
-          Nossa missão é tornar a informação sobre a saúde da pele mais visível, confortável e prática. Olhamos para um
-          futuro em que o cuidado médico inteligente seja mais próximo das pessoas, mais preventivo e mais simples de
-          interpretar.
+          Nossa missão é tornar a informação sobre a saúde da pele mais visível, confortável e prática.
+          Olhamos para um futuro em que o cuidado médico inteligente seja mais próximo das pessoas,
+          mais preventivo e mais simples de interpretar.
         </p>
-      </div>
-      <div className="about__visual reveal reveal--delay">
-        <img src="/assets/generated/product-blue.png" alt="Sensor BioCheck azul em curativo transparente" />
-        <div className="about__metrics">
-          <span>
-            <Check size={16} />
-            Inovação acessível
-          </span>
-          <span>
-            <Check size={16} />
-            Saúde inteligente
-          </span>
-          <span>
-            <Check size={16} />
-            Conforto no cuidado
-          </span>
+      </Reveal>
+      <Reveal className="about__img" delay={120}>
+        <img src="/assets/generated/product-blue.png" alt="Sensor BioCheck azul" />
+        <div className="about__badges">
+          {["Inovação acessível", "Saúde inteligente", "Conforto no cuidado"].map((t) => (
+            <span key={t}><Check size={14} /> {t}</span>
+          ))}
         </div>
-      </div>
+      </Reveal>
     </section>
   );
 }
 
-function Partnership() {
-  const [logoAvailable, setLogoAvailable] = React.useState(true);
+/* ───── partnership ───── */
 
+function Partnership() {
+  const [logoOk, setLogoOk] = React.useState(true);
   return (
-    <section className="section partnership">
-      <div className="partnership__card reveal">
-        <div>
-          <span>Parceria Oficial com IPear</span>
+    <section className="section section--flush">
+      <Reveal className="partner">
+        <div className="partner__copy">
+          <span className="section__tag">Parceria Oficial</span>
           <h2>Pesquisa, tecnologia e cuidado conectados.</h2>
           <p>
-            A parceria fortalece o desenvolvimento de soluções médicas inteligentes com uma visão de inovação
-            responsável, acessível e alinhada ao futuro da saúde.
+            A parceria com o IPear fortalece o desenvolvimento de soluções médicas inteligentes com
+            uma visão de inovação responsável, acessível e alinhada ao futuro da saúde.
           </p>
         </div>
-        <div className="ipear-mark" aria-label="Logo IPear">
-          {logoAvailable ? (
-            <img
-              src="/assets/logos/ipear-logo.png"
-              alt="IPear"
-              onError={() => setLogoAvailable(false)}
-            />
+        <div className="partner__logo" aria-label="Logo IPear">
+          {logoOk ? (
+            <img src="/assets/logos/ipear-logo.png" alt="IPear" onError={() => setLogoOk(false)} />
           ) : (
             <strong>IPear</strong>
           )}
         </div>
-      </div>
+      </Reveal>
     </section>
   );
 }
 
+/* ───── pricing ───── */
+
 function Pricing() {
   return (
-    <section className="section pricing" id="pricing">
-      <div className="section__heading reveal">
-        <span>Planos</span>
+    <section className="section" id="planos">
+      <Reveal className="section__head">
+        <span className="section__tag">Planos</span>
         <h2>Opções pensadas para cada rotina de cuidado.</h2>
         <p>
-          Estruturas simples, elegantes e flexíveis para quem busca monitoramento inteligente com segurança e
-          praticidade.
+          Estruturas simples, flexíveis e acessíveis para quem busca monitoramento inteligente
+          com segurança e praticidade.
         </p>
-      </div>
+      </Reveal>
 
-      <div className="pricing-grid">
-        {pricing.map((plan) => (
-          <article className={`pricing-card ${plan.featured ? "pricing-card--featured" : ""} reveal`} key={plan.name}>
-            <CircleDollarSign size={30} />
-            <h3>{plan.name}</h3>
-            <p>{plan.description}</p>
+      <div className="pricing">
+        {plans.map((p, i) => (
+          <Reveal
+            className={`pricing__card ${p.featured ? "pricing__card--featured" : ""}`}
+            key={p.name}
+            delay={i * 100}
+            tag="article"
+          >
+            <h3>{p.name}</h3>
+            <p>{p.description}</p>
             <ul>
-              {plan.details.map((detail) => (
-                <li key={detail}>
-                  <Check size={16} />
-                  {detail}
-                </li>
+              {p.details.map((d) => (
+                <li key={d}><Check size={15} /> {d}</li>
               ))}
             </ul>
-            <a className={`button ${plan.featured ? "button--primary" : "button--ghost"}`} href="#contact">
-              {plan.cta}
-              <ArrowRight size={16} />
+            <a className={`btn ${p.featured ? "btn--primary" : "btn--outline"} btn--sm`} href="#contato">
+              {p.cta} <ArrowRight size={14} />
             </a>
-          </article>
+          </Reveal>
         ))}
       </div>
     </section>
   );
 }
 
+/* ───── mission band ───── */
+
 function MissionBand() {
   return (
-    <section className="section mission-section">
-      <div className="mission reveal">
-        <div className="mission__image">
-          <img src="/assets/generated/hero-bandage.png" alt="Detalhe do curativo inteligente BioCheck" />
+    <section className="section section--flush">
+      <Reveal className="mission">
+        <div className="mission__img">
+          <img src="/assets/generated/hero-bandage.png" alt="Curativo inteligente BioCheck" />
         </div>
         <div className="mission__copy">
           <h2>Sua saúde visível em cada detalhe.</h2>
           <p>
-            A BioCheck une sensores colorimétricos e hidrogel biocompatível para transformar sinais invisíveis em
-            informação visual, confortável e acionável.
+            A BioCheck une sensores colorimétricos e hidrogel biocompatível para transformar
+            sinais invisíveis em informação visual, confortável e acionável.
           </p>
-          <div className="mission__checks">
-            {["Matriz biocompatível", "Tecnologia informada por ciência", "Leitura colorimétrica", "Cuidado cotidiano"].map((item) => (
-              <span key={item}>
-                <Check size={16} />
-                {item}
-              </span>
+          <div className="mission__tags">
+            {["Matriz biocompatível", "Ciência aplicada", "Leitura colorimétrica", "Cuidado cotidiano"].map((t) => (
+              <span key={t}><Check size={14} /> {t}</span>
             ))}
           </div>
         </div>
-      </div>
+      </Reveal>
     </section>
   );
 }
 
+/* ───── contact footer ───── */
+
 function ContactFooter() {
+  const [email, setEmail] = React.useState("");
+  const [name, setName] = React.useState("");
+  const [message, setMessage] = React.useState("");
+  const [sent, setSent] = React.useState(false);
+  const [sending, setSending] = React.useState(false);
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setSending(true);
+    setTimeout(() => {
+      setSending(false);
+      setSent(true);
+      setEmail("");
+      setName("");
+      setMessage("");
+      setTimeout(() => setSent(false), 4000);
+    }, 1500);
+  }
+
   return (
-    <footer className="footer" id="contact">
-      <div>
-        <img src="/assets/logos/logo-slogan-cropped.png" alt="BioCheck. Sua saúde visível em cada detalhe." />
-        <p>Tecnologia inteligente e acessível para tornar o cuidado com feridas mais claro, confortável e seguro.</p>
+    <footer className="footer" id="contato">
+      <div className="footer__brand">
+        <img src="/assets/logos/logo-slogan-cropped.png" alt="BioCheck — Sua saúde visível em cada detalhe." />
+        <p>
+          Tecnologia inteligente e acessível para tornar o cuidado com feridas
+          mais claro, confortável e seguro.
+        </p>
       </div>
-      <form className="footer__form" onSubmit={(event) => event.preventDefault()}>
-        <label htmlFor="email">Receba novidades</label>
-        <div>
-          <input id="email" type="email" placeholder="voce@exemplo.com" aria-label="Endereço de e-mail" />
-          <button className="button button--primary" type="submit">
-            Acompanhar
-            <ArrowRight size={16} />
-          </button>
-        </div>
+
+      <form className="footer__form" onSubmit={handleSubmit}>
+        <h3>Fale Conosco</h3>
+        <input
+          type="text"
+          placeholder="Seu nome"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          aria-label="Seu nome"
+        />
+        <input
+          type="email"
+          placeholder="seu@email.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          required
+          aria-label="Seu e-mail"
+        />
+        <textarea
+          placeholder="Sua mensagem..."
+          rows={3}
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          aria-label="Mensagem"
+        />
+        <button className="btn btn--primary" type="submit" disabled={sending}>
+          {sending ? "Enviando..." : sent ? "Enviado com sucesso ✓" : "Enviar Mensagem"}
+          {!sending && !sent && <Send size={15} />}
+        </button>
+        {sent && <p className="footer__success">Obrigado! Entraremos em contato em breve.</p>}
       </form>
+
+      <div className="footer__bottom">
+        <p>© 2026 BioCheck Technologies. Todos os direitos reservados.</p>
+        <div className="footer__links">
+          <a href="#">Privacidade</a>
+          <a href="#">Termos</a>
+        </div>
+      </div>
     </footer>
   );
 }
 
+/* ───── app ───── */
+
 function App() {
   return (
-    <>
-      <IntroSequence />
-      <div className="page">
-        <Nav />
-        <main>
-          <Hero />
-          <HowItWorks />
-          <ProductShowcase />
-          <WhoItsFor />
-          <WhyBioCheck />
-          <About />
-          <Partnership />
-          <Pricing />
-          <MissionBand />
-        </main>
-        <ContactFooter />
-      </div>
-    </>
+    <div className="page">
+      <Nav />
+      <main>
+        <Hero />
+        <HowItWorks />
+        <ProductShowcase />
+        <WhoItsFor />
+        <WhyBioCheck />
+        <About />
+        <Partnership />
+        <Pricing />
+        <MissionBand />
+      </main>
+      <ContactFooter />
+    </div>
   );
 }
 
